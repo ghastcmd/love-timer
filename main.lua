@@ -131,6 +131,19 @@ function draw_edit()
     -- x close name
     -- love.graphics.setColor(1, 1, 1)
     -- love.graphics.printf("x", 50 + width - 30, 50 + 18, 10, "center")
+
+    love.graphics.setColor(1, 1, 1)
+
+    local initial_x = 50
+    local initial_y = 70
+    local text_area_width = 70
+    local gap = 25
+
+    love.graphics.rectangle("fill", x + initial_x, y + initial_y, text_area_width, 50)
+    
+    love.graphics.rectangle("fill", x + initial_x + text_area_width + gap, y + initial_y, text_area_width, 50)
+
+    love.graphics.rectangle("fill", x + initial_x + text_area_width * 2 + gap * 2, y + initial_y, text_area_width, 50)
 end
 
 local canvas_index = 0
@@ -171,13 +184,13 @@ end
 function love.mousepressed(x, y, button, istouch, presses)
     if button == 1 then
         for k, button in pairs(buttons) do
-            if inside_bounding_box(x, y, button) then
+            if inside_bounding_box(x, y, button) and not clicked_state.edit_clicked then
                 clicked_state:update_click(k)
             end
         end
 
         for k, edit_button in pairs(edit_buttons) do
-            if inside_bounding_box(x, y, edit_button) then
+            if inside_bounding_box(x, y, edit_button) and not clicked_state.edit_clicked then
                 clicked_state:update_edit_click(k)
             end
         end
