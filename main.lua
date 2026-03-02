@@ -2,6 +2,7 @@ local buttons = {}
 local timers = {}
 local edit_buttons = {}
 local close_edit = {}
+local input_texts = {}
 
 local clicked_state = {
     clicked = false,
@@ -11,10 +12,40 @@ local clicked_state = {
     edit_pos = 0,
 }
 
+local edit_page = {
+    inputbox1 = "",
+    inputbox2 = "",
+    inputbox3 = "",
+    current_box_pos = 0,
+}
 clicked_state.__index = self
 setmetatable(clicked_state, self)
 
-function create_button(x, y, width, height, color, hoverColor, text)
+local canvas_index = 0
+
+function write_canvas(text)
+    love.graphics.setColor(0.1, 0.1, 0.1)
+    love.graphics.rectangle("fill", 0, canvas_index * 15 + 1, 300, 15)
+
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf(text, 0, canvas_index * 15, 100, "left")
+    
+    canvas_index = canvas_index + 1
+end
+
+function write_canvas_reset_index()
+    canvas_index = 0
+end
+
+function create_button(x, y, width, height, color, hoverColor, text, align, textcolor)
+    if align == nil then
+        align = "center"
+    end
+
+    if textcolor == nil then
+        textcolor = {1, 1, 1}
+    end
+
     return {
         x = x,
         y = y,
@@ -23,7 +54,9 @@ function create_button(x, y, width, height, color, hoverColor, text)
         color = color,
         hoverColor = hoverColor,
         isHovered = false,
-        text = text
+        text = text,
+        align = align,
+        textcolor = textcolor,
     }
 end
 
@@ -77,8 +110,8 @@ function draw_button(buttonctx)
     love.graphics.rectangle("fill", new_x, new_y, buttonctx.width * scale, buttonctx.height * scale)
     
     -- Draw text
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(buttonctx.text, new_x, new_y + 18 * scale, buttonctx.width * scale, "center")
+    love.graphics.setColor(unpack(buttonctx.textcolor))
+    love.graphics.printf(buttonctx.text, new_x, new_y + 18 * scale, buttonctx.width * scale, buttonctx.align)
 end
 
 function love.mousemoved(x, y)
@@ -92,6 +125,12 @@ function love.mousemoved(x, y)
 
     close_edit.isHovered = inside_bounding_box(x, y, close_edit)
 end
+
+function love.textinput(t)
+    local pos = edit_page.current_box_pos
+    input_texts[pos].text = input_texts[pos].text .. t
+end
+
 
 -- local textField = {
 --     x = 100,
@@ -132,34 +171,16 @@ function draw_edit()
     -- love.graphics.setColor(1, 1, 1)
     -- love.graphics.printf("x", 50 + width - 30, 50 + 18, 10, "center")
 
-    love.graphics.setColor(1, 1, 1)
+    -- love.graphics.setColor(1, 1, 1)
 
     local initial_x = 50
     local initial_y = 70
     local text_area_width = 70
     local gap = 25
 
-    love.graphics.rectangle("fill", x + initial_x, y + initial_y, text_area_width, 50)
-    
-    love.graphics.rectangle("fill", x + initial_x + text_area_width + gap, y + initial_y, text_area_width, 50)
-
-    love.graphics.rectangle("fill", x + initial_x + text_area_width * 2 + gap * 2, y + initial_y, text_area_width, 50)
-end
-
-local canvas_index = 0
-
-function write_canvas(text)
-    love.graphics.setColor(0.1, 0.1, 0.1)
-    love.graphics.rectangle("fill", 0, canvas_index * 15 + 1, 100, 15)
-
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(text, 0, canvas_index * 15, 100, "left")
-    
-    canvas_index = canvas_index + 1
-end
-
-function write_canvas_reset_index()
-    canvas_index = 0
+    for k, textboxes in pairs(input_texts) do
+        draw_button(textboxes)
+    end
 end
 
 function clicked_state:update_click(pos)
@@ -200,6 +221,14 @@ function love.mousepressed(x, y, button, istouch, presses)
                 clicked_state:update_edit_click(0)
             end
         end
+
+        if clicked_state.edit_clicked then
+            for k, input_text in pairs(input_texts) do
+                if inside_bounding_box(x, y, input_text) then
+                    edit_page.current_box_pos = k
+                end
+            end
+        end
     end
 end
 
@@ -217,6 +246,25 @@ function love.load()
     edit_buttons[3] = create_button(100 + 200 + 10, 300, 40, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, ">")
 
     close_edit = create_button(350, 50, 50, 50, {1.0, 0.4, 0.4}, {1.0, 0.5, 0.5}, "x")
+
+    
+    local x = 50
+    local y = 50
+    local initial_x = 50
+    local initial_y = 70
+    local text_area_width = 70
+    local gap = 25
+
+    -- love.graphics.rectangle("fill", x + initial_x, y + initial_y, text_area_width, 50)
+
+    -- love.graphics.rectangle("fill", x + initial_x + text_area_width + gap, y + initial_y, text_area_width, 50)
+
+    -- love.graphics.rectangle("fill", x + initial_x + text_area_width * 2 + gap * 2, y + initial_y, text_area_width, 50)
+
+    input_texts[1] = create_button(x + initial_x, y + initial_y, text_area_width, 50, {1, 1, 1}, {1, 1, 1}, "", "center", {0, 0, 0})
+    input_texts[2] = create_button(x + initial_x + text_area_width + gap, y + initial_y, text_area_width, 50, {1, 1, 1}, {1, 1, 1}, "", "center", {0, 0, 0})
+    input_texts[3] = create_button(x + initial_x + text_area_width * 2 + gap * 2, y + initial_y, text_area_width, 50, {1, 1, 1}, {1, 1, 1}, "", "center", {0, 0, 0})
+
 end
 
 function love.update(dt)
