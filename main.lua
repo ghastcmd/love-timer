@@ -1,9 +1,12 @@
 local buttons = {}
 local timers = {}
 local edit_buttons = {}
+local close_edit = {}
 
 local clicked_state = {
     clicked = false,
+    edit_clicked = false,
+    current_timer_name = "timer 0",
     pos = 0
 }
 
@@ -85,6 +88,8 @@ function love.mousemoved(x, y)
     for k, but in pairs(edit_buttons) do
         but.isHovered = inside_bounding_box(x, y, but)
     end
+
+    close_edit.isHovered = inside_bounding_box(x, y, close_edit)
 end
 
 -- local textField = {
@@ -101,6 +106,31 @@ end
 --         textField.text = textField.text .. t
 --     end
 -- end
+
+function draw_edit()
+    local x = 50
+    local y = 50
+    local width = 350
+    local height = 350
+
+    -- background
+    love.graphics.setColor(1.0, 0.3, 0.3)
+    love.graphics.rectangle("fill", 50, 50, 350, 350)
+
+    -- title
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf(clicked_state.current_timer_name, x, y + 20, width, "center")
+
+    draw_button(close_edit)
+
+    -- close button
+    -- love.graphics.setColor(1.0, 0.4, 0.4)
+    -- love.graphics.rectangle("fill", 50 + 300, 50, 50, 50)
+
+    -- x close name
+    -- love.graphics.setColor(1, 1, 1)
+    -- love.graphics.printf("x", 50 + width - 30, 50 + 18, 10, "center")
+end
 
 local canvas_index = 0
 
@@ -129,11 +159,28 @@ function clicked_state:update_click(pos)
     end
 end
 
+function clicked_state:update_edit_click()
+    self.edit_clicked = not self.edit_clicked
+    -- self.pos = pos
+end
+
 function love.mousepressed(x, y, button, istouch, presses)
     if button == 1 then
         for k, button in pairs(buttons) do
-            if x >= button.x and x <= button.x + button.width and y >= button.y and y <= button.y + button.height then
+            if inside_bounding_box(x, y, button) then
                 clicked_state:update_click(k)
+            end
+        end
+
+        for k, edit_button in pairs(edit_buttons) do
+            if inside_bounding_box(x, y, edit_button) then
+                clicked_state:update_edit_click()
+            end
+        end
+
+        if clicked_state.edit_clicked then
+            if inside_bounding_box(x, y, close_edit) then
+                clicked_state:update_edit_click()
             end
         end
     end
@@ -151,6 +198,8 @@ function love.load()
     edit_buttons[1] = create_button(100 + 200 + 10, 100, 40, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, ">")
     edit_buttons[2] = create_button(100 + 200 + 10, 200, 40, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, ">")
     edit_buttons[3] = create_button(100 + 200 + 10, 300, 40, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, ">")
+
+    close_edit = create_button(350, 50, 50, 50, {1.0, 0.4, 0.4}, {1.0, 0.5, 0.5}, "x")
 end
 
 function love.update(dt)
@@ -179,8 +228,13 @@ function love.draw()
     end
 
     if clicked_state.clicked then
-        write_canvas("clicked" .. tostring(clicked_state.pos))
+        write_canvas("clicked " .. tostring(clicked_state.pos))
         -- love.graphics.printf(, 0, 0, 100, "left")
+    end
+
+    if clicked_state.edit_clicked then
+        write_canvas("cliked edit")
+        draw_edit()
     end
 
     write_canvas_reset_index()
