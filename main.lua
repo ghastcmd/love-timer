@@ -6,8 +6,9 @@ local close_edit = {}
 local clicked_state = {
     clicked = false,
     edit_clicked = false,
-    current_timer_name = "timer 0",
-    pos = 0
+    current_timer_name = "",
+    pos = 0,
+    edit_pos = 0,
 }
 
 clicked_state.__index = self
@@ -159,9 +160,12 @@ function clicked_state:update_click(pos)
     end
 end
 
-function clicked_state:update_edit_click()
+function clicked_state:update_edit_click(pos)
     self.edit_clicked = not self.edit_clicked
     -- self.pos = pos
+    self.edit_pos = pos
+
+    clicked_state.current_timer_name = "timer " .. pos
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
@@ -174,13 +178,13 @@ function love.mousepressed(x, y, button, istouch, presses)
 
         for k, edit_button in pairs(edit_buttons) do
             if inside_bounding_box(x, y, edit_button) then
-                clicked_state:update_edit_click()
+                clicked_state:update_edit_click(k)
             end
         end
 
         if clicked_state.edit_clicked then
             if inside_bounding_box(x, y, close_edit) then
-                clicked_state:update_edit_click()
+                clicked_state:update_edit_click(0)
             end
         end
     end
