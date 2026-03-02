@@ -85,13 +85,28 @@ function love.textinput(t)
     end
 end
 
+local canvas_index = 0
+
+function write_canvas(text)
+    love.graphics.setColor(0.1, 0.1, 0.1)
+    love.graphics.rectangle("fill", 0, canvas_index * 15 + 1, 100, 15)
+
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf(text, 0, canvas_index * 15, 100, "left")
+    
+    canvas_index = canvas_index + 1
+end
+
+function write_canvas_reset_index()
+    canvas_index = 0
+end
+
 local clicked_state = {
     clicked = false,
     pos = 0
 }
 
 clicked_state.__index = self
-
 setmetatable(clicked_state, self)
 
 function clicked_state:update_click(pos)
@@ -139,12 +154,17 @@ function love.draw()
         draw_button(button)
     end
     
-    love.graphics.printf(timers[1].current_time, 0, 10, 100, "left")
+    -- love.graphics.printf(timers[1].current_time, 0, 10, 100, "left")
+    write_canvas(timers[1].current_time)
     if timers[1]:check_ended() then
-        love.graphics.printf("Started", 0, 0, 100, "left")
+        write_canvas("Started")
+        -- love.graphics.printf("Started", 0, 0, 100, "left")
     end
 
     if clicked_state.clicked then
-        love.graphics.printf("clicked" .. tostring(clicked_state.pos), 0, 0, 100, "left")
+        write_canvas("clicked" .. tostring(clicked_state.pos))
+        -- love.graphics.printf(, 0, 0, 100, "left")
     end
+
+    write_canvas_reset_index()
 end
