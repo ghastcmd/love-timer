@@ -1,5 +1,14 @@
 local buttons = {}
 local timers = {}
+local edit_buttons = {}
+
+local clicked_state = {
+    clicked = false,
+    pos = 0
+}
+
+clicked_state.__index = self
+setmetatable(clicked_state, self)
 
 function create_button(x, y, width, height, color, hoverColor, text)
     return {
@@ -12,6 +21,10 @@ function create_button(x, y, width, height, color, hoverColor, text)
         isHovered = false,
         text = text
     }
+end
+
+function inside_bounding_box(x, y, but)
+    return x > but.x and x < but.x + but.width and y > but.y and y < but.y + but.height
 end
 
 function create_timer(end_time, limit_time)
@@ -66,24 +79,28 @@ end
 
 function love.mousemoved(x, y)
     for k, but in pairs(buttons) do
-        but.isHovered = x > but.x and x < but.x + but.width and y > but.y and y < but.y + but.height
+        but.isHovered = inside_bounding_box(x, y, but)
+    end
+
+    for k, but in pairs(edit_buttons) do
+        but.isHovered = inside_bounding_box(x, y, but)
     end
 end
 
-local textField = {
-    x = 100,
-    y = 200,
-    width = 200,
-    height = 30,
-    text = "",
-    isActive = false
-}
+-- local textField = {
+--     x = 100,
+--     y = 200,
+--     width = 200,
+--     height = 30,
+--     text = "",
+--     isActive = false
+-- }
 
-function love.textinput(t)
-    if textField.isActive then
-        textField.text = textField.text .. t
-    end
-end
+-- function love.textinput(t)
+--     if textField.isActive then
+--         textField.text = textField.text .. t
+--     end
+-- end
 
 local canvas_index = 0
 
@@ -100,14 +117,6 @@ end
 function write_canvas_reset_index()
     canvas_index = 0
 end
-
-local clicked_state = {
-    clicked = false,
-    pos = 0
-}
-
-clicked_state.__index = self
-setmetatable(clicked_state, self)
 
 function clicked_state:update_click(pos)
     self.clicked = true
@@ -138,6 +147,10 @@ function love.load()
     buttons[1] = create_button(100, 100, 200, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, "Text")
     buttons[2] = create_button(100, 200, 200, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, "Text")
     buttons[3] = create_button(100, 300, 200, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, "Text")
+
+    edit_buttons[1] = create_button(100 + 200 + 10, 100, 40, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, ">")
+    edit_buttons[2] = create_button(100 + 200 + 10, 200, 40, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, ">")
+    edit_buttons[3] = create_button(100 + 200 + 10, 300, 40, 50, {1.0, 0.3, 0.3}, {1.0, 0.4, 0.4}, ">")
 end
 
 function love.update(dt)
@@ -152,6 +165,10 @@ function love.draw()
     for k, button in pairs(buttons) do
         button.text = tostring(timers[k].current_time)
         draw_button(button)
+    end
+
+    for k, but in pairs(edit_buttons) do
+        draw_button(but)
     end
     
     -- love.graphics.printf(timers[1].current_time, 0, 10, 100, "left")
