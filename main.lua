@@ -212,8 +212,8 @@ function clicked_state:update_current_timer(current_time)
     if current_time == "" then
         current_time = 0
     end
-    
-    timers[edit_page.current_box_pos]:set_timer(tonumber(current_time))
+
+    timers[self.edit_pos]:set_timer(tonumber(current_time))
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
