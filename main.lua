@@ -194,7 +194,12 @@ function draw_edit()
     local text_area_width = 70
     local gap = 25
 
+    
+    local titles = {"pomodoro", "short time", "long time"}
+
     for k, textboxes in pairs(input_texts) do
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.printf(titles[k], textboxes.x, textboxes.y - 15, textboxes.width, "center")
         draw_button(textboxes)
     end
 end
@@ -240,8 +245,10 @@ function love.mousepressed(x, y, button, istouch, presses)
 
         if clicked_state.edit_clicked then
             for k, input_text in pairs(input_texts) do
+                input_text.isHovered = false
                 if inside_bounding_box(x, y, input_text) then
                     edit_page.current_box_pos = k
+                    input_text.isHovered = true
                 end
             end
         end
@@ -277,9 +284,9 @@ function love.load()
 
     -- love.graphics.rectangle("fill", x + initial_x + text_area_width * 2 + gap * 2, y + initial_y, text_area_width, 50)
 
-    input_texts[1] = create_button(x + initial_x, y + initial_y, text_area_width, 50, {1, 1, 1}, {1, 1, 1}, "", "center", {0, 0, 0})
-    input_texts[2] = create_button(x + initial_x + text_area_width + gap, y + initial_y, text_area_width, 50, {1, 1, 1}, {1, 1, 1}, "", "center", {0, 0, 0})
-    input_texts[3] = create_button(x + initial_x + text_area_width * 2 + gap * 2, y + initial_y, text_area_width, 50, {1, 1, 1}, {1, 1, 1}, "", "center", {0, 0, 0})
+    input_texts[1] = create_button(x + initial_x, y + initial_y, text_area_width, 50, {1, 1, 1}, {0.8, 0.8, 0.8}, "", "center", {0, 0, 0})
+    input_texts[2] = create_button(x + initial_x + text_area_width + gap, y + initial_y, text_area_width, 50, {1, 1, 1}, {0.8, 0.8, 0.8}, "", "center", {0, 0, 0})
+    input_texts[3] = create_button(x + initial_x + text_area_width * 2 + gap * 2, y + initial_y, text_area_width, 50, {1, 1, 1}, {0.8, 0.8, 0.8}, "", "center", {0, 0, 0})
 
 end
 
