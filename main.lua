@@ -75,6 +75,8 @@ end
 function create_timer(end_time, limit_time)
     local timer = {
         end_time = end_time,
+        short_time = 5,
+        long_time = 10,
         limit_time = limit_time,
         current_time = 0.0,
         is_running = false,
@@ -90,6 +92,7 @@ function create_timer(end_time, limit_time)
                 self.current_time = self.current_time + love.timer.getDelta()
             else
                 self.is_ended = true
+                self.is_running = false
             end
         end
     end
@@ -141,10 +144,13 @@ end
 function love.keypressed(key)
     if key == "backspace" then
         local pos = edit_page.current_box_pos
-        local byteoffset = utf8.offset(input_texts[pos].text, -1)
-        if byteoffset then
-            input_texts[pos].text = input_texts[pos].text:sub(1, byteoffset - 1)
-            clicked_state:update_current_timer(input_texts[pos].text)
+        if input_texts[pos].text ~= "" then
+            write_canvas_prev("input_text.text: \"" .. input_texts[pos].text .. "\"")
+            local byteoffset = utf8.offset(input_texts[pos].text, -1)
+            if byteoffset then
+                input_texts[pos].text = input_texts[pos].text:sub(1, byteoffset - 1)
+                clicked_state:update_current_timer(input_texts[pos].text)
+            end
         end
     end
 end
@@ -209,11 +215,18 @@ end
 
 function clicked_state:update_current_timer(current_time)
     -- write_canvas_prev(edit_page.current_box_pos)
+    -- write_canvas_prev("cur_time: " .. current_time)
     if current_time == "" then
         current_time = 0
     end
 
     timers[self.edit_pos]:set_timer(tonumber(current_time))
+end
+
+function clicked_state:update_times()
+    input_texts[1].text  = tostring(timers[self.edit_pos].end_time)
+    input_texts[2].text = tostring(timers[self.edit_pos].short_time)
+    input_texts[3].text = tostring(timers[self.edit_pos].long_time)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
@@ -227,12 +240,14 @@ function love.mousepressed(x, y, button, istouch, presses)
         for k, edit_button in pairs(edit_buttons) do
             if inside_bounding_box(x, y, edit_button) and not clicked_state.edit_clicked then
                 clicked_state:update_edit_click(k)
+                clicked_state:update_times()
             end
         end
 
         if clicked_state.edit_clicked then
             if inside_bounding_box(x, y, close_edit) then
                 clicked_state:update_edit_click(0)
+                -- clicked_state:empty_texts()
             end
         end
 
