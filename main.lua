@@ -8,6 +8,12 @@ local write_back_buffer = {}
 
 local utf8 = require("utf8")
 
+local edit_page = {
+    current_box_pos = 0,
+}
+
+local canvas_index = 0
+
 local clicked_state = {
     clicked = false,
     edit_clicked = false,
@@ -18,14 +24,38 @@ local clicked_state = {
 clicked_state.__index = self
 setmetatable(clicked_state, self)
 
-local edit_page = {
-    inputbox1 = "",
-    inputbox2 = "",
-    inputbox3 = "",
-    current_box_pos = 0,
-}
+function clicked_state:update_click(pos)
+    self.clicked = true
+    self.pos = pos
 
-local canvas_index = 0
+    timers[pos].is_running = not timers[pos].is_running
+    
+    if timers[pos].is_ended then
+        timers[pos]:reset_timer()
+    end
+end
+
+function clicked_state:update_edit_click(pos)
+    self.edit_clicked = not self.edit_clicked
+    -- self.pos = pos
+    self.edit_pos = pos
+
+    clicked_state.current_timer_name = "timer " .. pos
+end
+
+function clicked_state:update_current_timer(current_time)
+    if current_time == "" then
+        current_time = 0
+    end
+
+    timers[self.edit_pos]:set_timer(tonumber(current_time))
+end
+
+function clicked_state:update_times()
+    input_texts[1].text = tostring(timers[self.edit_pos].end_time)
+    input_texts[2].text = tostring(timers[self.edit_pos].short_time)
+    input_texts[3].text = tostring(timers[self.edit_pos].long_time)
+end
 
 function write_canvas(text)
     love.graphics.setColor(0.1, 0.1, 0.1)
@@ -68,10 +98,6 @@ function create_button(x, y, width, height, color, hoverColor, text, align, text
     }
 end
 
-function inside_bounding_box(x, y, but)
-    return x > but.x and x < but.x + but.width and y > but.y and y < but.y + but.height
-end
-
 function create_timer(end_time, limit_time)
     local timer = {
         end_time = end_time,
@@ -83,7 +109,6 @@ function create_timer(end_time, limit_time)
         is_ended = false
     }
     timer.__index = self
-
     setmetatable(timer, self)
 
     function timer:update_timer()
@@ -116,6 +141,10 @@ function create_timer(end_time, limit_time)
     return timer
 end
 
+function inside_bounding_box(x, y, but)
+    return x > but.x and x < but.x + but.width and y > but.y and y < but.y + but.height
+end
+
 function draw_button(buttonctx)
     -- Draw button with animation
     local scale = buttonctx.isHovered and 1.05 or 1
@@ -127,41 +156,6 @@ function draw_button(buttonctx)
     -- Draw text
     love.graphics.setColor(unpack(buttonctx.textcolor))
     love.graphics.printf(buttonctx.text, new_x, new_y + 18 * scale, buttonctx.width * scale, buttonctx.align)
-end
-
-function love.mousemoved(x, y)
-    for k, but in pairs(buttons) do
-        but.isHovered = inside_bounding_box(x, y, but)
-    end
-
-    for k, but in pairs(edit_buttons) do
-        but.isHovered = inside_bounding_box(x, y, but)
-    end
-
-    close_edit.isHovered = inside_bounding_box(x, y, close_edit)
-end
-
-function love.keypressed(key)
-    if key == "backspace" then
-        local pos = edit_page.current_box_pos
-        if input_texts[pos].text ~= "" then
-            write_canvas_prev("input_text.text: \"" .. input_texts[pos].text .. "\"")
-            local byteoffset = utf8.offset(input_texts[pos].text, -1)
-            if byteoffset then
-                input_texts[pos].text = input_texts[pos].text:sub(1, byteoffset - 1)
-                clicked_state:update_current_timer(input_texts[pos].text)
-            end
-        end
-    end
-end
-
-function love.textinput(t)
-    last_input = t
-    local pos = edit_page.current_box_pos
-    if t:match("%d") then
-        input_texts[pos].text = input_texts[pos].text .. t
-        clicked_state:update_current_timer(input_texts[pos].text)
-    end
 end
 
 function draw_edit()
@@ -194,39 +188,38 @@ function draw_edit()
     end
 end
 
-function clicked_state:update_click(pos)
-    self.clicked = true
-    self.pos = pos
+function love.mousemoved(x, y)
+    for k, but in pairs(buttons) do
+        but.isHovered = inside_bounding_box(x, y, but)
+    end
 
-    timers[pos].is_running = not timers[pos].is_running
-    
-    if timers[pos].is_ended then
-        timers[pos]:reset_timer()
+    for k, but in pairs(edit_buttons) do
+        but.isHovered = inside_bounding_box(x, y, but)
+    end
+
+    close_edit.isHovered = inside_bounding_box(x, y, close_edit)
+end
+
+function love.keypressed(key)
+    if key == "backspace" then
+        local pos = edit_page.current_box_pos
+        if input_texts[pos].text ~= "" then
+            local byteoffset = utf8.offset(input_texts[pos].text, -1)
+            if byteoffset then
+                input_texts[pos].text = input_texts[pos].text:sub(1, byteoffset - 1)
+                clicked_state:update_current_timer(input_texts[pos].text)
+            end
+        end
     end
 end
 
-function clicked_state:update_edit_click(pos)
-    self.edit_clicked = not self.edit_clicked
-    -- self.pos = pos
-    self.edit_pos = pos
-
-    clicked_state.current_timer_name = "timer " .. pos
-end
-
-function clicked_state:update_current_timer(current_time)
-    -- write_canvas_prev(edit_page.current_box_pos)
-    -- write_canvas_prev("cur_time: " .. current_time)
-    if current_time == "" then
-        current_time = 0
+function love.textinput(t)
+    last_input = t
+    local pos = edit_page.current_box_pos
+    if t:match("%d") then
+        input_texts[pos].text = input_texts[pos].text .. t
+        clicked_state:update_current_timer(input_texts[pos].text)
     end
-
-    timers[self.edit_pos]:set_timer(tonumber(current_time))
-end
-
-function clicked_state:update_times()
-    input_texts[1].text  = tostring(timers[self.edit_pos].end_time)
-    input_texts[2].text = tostring(timers[self.edit_pos].short_time)
-    input_texts[3].text = tostring(timers[self.edit_pos].long_time)
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
@@ -303,8 +296,6 @@ function love.update(dt)
         timer:update_timer()
     end
 end
-
-local current_time = 0.0
 
 function love.draw()
     write_canvas("last_input: " .. tostring(last_input))
