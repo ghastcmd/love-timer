@@ -3,6 +3,9 @@ local timers = {}
 local edit_buttons = {}
 local close_edit = {}
 local input_texts = {}
+local last_input = 0
+
+local utf8 = require("utf8")
 
 local clicked_state = {
     clicked = false,
@@ -126,9 +129,22 @@ function love.mousemoved(x, y)
     close_edit.isHovered = inside_bounding_box(x, y, close_edit)
 end
 
+function love.keypressed(key)
+    if key == "backspace" then
+        local pos = edit_page.current_box_pos
+        local byteoffset = utf8.offset(input_texts[pos].text, -1)
+        if byteoffset then
+            input_texts[pos].text = input_texts[pos].text:sub(1, byteoffset - 1)
+        end
+    end
+end
+
 function love.textinput(t)
+    last_input = t
     local pos = edit_page.current_box_pos
-    input_texts[pos].text = input_texts[pos].text .. t
+    if t:match("%d") then
+        input_texts[pos].text = input_texts[pos].text .. t
+    end
 end
 
 
@@ -276,6 +292,8 @@ end
 local current_time = 0.0
 
 function love.draw()
+    write_canvas("last_input: " .. tostring(last_input))
+
     for k, button in pairs(buttons) do
         button.text = tostring(timers[k].current_time)
         draw_button(button)
