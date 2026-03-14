@@ -4,6 +4,7 @@ local edit_buttons = {}
 local close_edit = {}
 local input_texts = {}
 local last_input = 0
+local write_back_buffer = {}
 
 local utf8 = require("utf8")
 
@@ -14,6 +15,8 @@ local clicked_state = {
     pos = 0,
     edit_pos = 0,
 }
+clicked_state.__index = self
+setmetatable(clicked_state, self)
 
 local edit_page = {
     inputbox1 = "",
@@ -21,8 +24,6 @@ local edit_page = {
     inputbox3 = "",
     current_box_pos = 0,
 }
-clicked_state.__index = self
-setmetatable(clicked_state, self)
 
 local canvas_index = 0
 
@@ -34,6 +35,10 @@ function write_canvas(text)
     love.graphics.printf(text, 0, canvas_index * 15, 100, "left")
     
     canvas_index = canvas_index + 1
+end
+
+function write_canvas_prev(back_string)
+    table.insert(write_back_buffer, back_string)
 end
 
 function write_canvas_reset_index()
@@ -101,6 +106,10 @@ function create_timer(end_time, limit_time)
         end
     end
 
+    function timer:set_timer(new_time)
+        self.end_time = new_time
+    end
+
     return timer
 end
 
@@ -135,6 +144,7 @@ function love.keypressed(key)
         local byteoffset = utf8.offset(input_texts[pos].text, -1)
         if byteoffset then
             input_texts[pos].text = input_texts[pos].text:sub(1, byteoffset - 1)
+            clicked_state:update_current_timer(input_texts[pos].text)
         end
     end
 end
@@ -144,24 +154,9 @@ function love.textinput(t)
     local pos = edit_page.current_box_pos
     if t:match("%d") then
         input_texts[pos].text = input_texts[pos].text .. t
+        clicked_state:update_current_timer(input_texts[pos].text)
     end
 end
-
-
--- local textField = {
---     x = 100,
---     y = 200,
---     width = 200,
---     height = 30,
---     text = "",
---     isActive = false
--- }
-
--- function love.textinput(t)
---     if textField.isActive then
---         textField.text = textField.text .. t
---     end
--- end
 
 function draw_edit()
     local x = 50
@@ -179,21 +174,10 @@ function draw_edit()
 
     draw_button(close_edit)
 
-    -- close button
-    -- love.graphics.setColor(1.0, 0.4, 0.4)
-    -- love.graphics.rectangle("fill", 50 + 300, 50, 50, 50)
-
-    -- x close name
-    -- love.graphics.setColor(1, 1, 1)
-    -- love.graphics.printf("x", 50 + width - 30, 50 + 18, 10, "center")
-
-    -- love.graphics.setColor(1, 1, 1)
-
     local initial_x = 50
     local initial_y = 70
     local text_area_width = 70
     local gap = 25
-
     
     local titles = {"pomodoro", "short time", "long time"}
 
@@ -221,6 +205,15 @@ function clicked_state:update_edit_click(pos)
     self.edit_pos = pos
 
     clicked_state.current_timer_name = "timer " .. pos
+end
+
+function clicked_state:update_current_timer(current_time)
+    -- write_canvas_prev(edit_page.current_box_pos)
+    if current_time == "" then
+        current_time = 0
+    end
+    
+    timers[edit_page.current_box_pos]:set_timer(tonumber(current_time))
 end
 
 function love.mousepressed(x, y, button, istouch, presses)
@@ -300,6 +293,10 @@ local current_time = 0.0
 
 function love.draw()
     write_canvas("last_input: " .. tostring(last_input))
+    for k, val in pairs(write_back_buffer) do
+        write_canvas(val)
+    end
+
 
     for k, button in pairs(buttons) do
         button.text = tostring(timers[k].current_time)
